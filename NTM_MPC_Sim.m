@@ -1,4 +1,4 @@
-%% A2
+%% Reset
 clear all
 %close all
 %% Quasi-LPV MPC Model %%
