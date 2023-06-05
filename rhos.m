@@ -28,7 +28,7 @@ function rho3 = rho3(x)
 end
 
 
-function Gamma, Phi = GammaPhi(rho1, rho2, rho3)
+function [Gamma, Phi] = Rho_to_PhiGamma(rho1, rho2, rho3)
     global w_dep kappa taur Ts zeta rs;
    
     N = length(rho1)
@@ -45,12 +45,12 @@ function Gamma, Phi = GammaPhi(rho1, rho2, rho3)
     end
 end
 
-function W, L, c = WLc(N, ulow, uhigh, xlow, xhigh)
+function [W, L, c] = getWLc(N, ulow, uhigh, xlow, xhigh)
     
     %calculate L
     Mu = zeros(N,N);
     for i=2:N-1
-        Mu(i,i) = [0 0 -eye(2) eye(2)];
+        Mu(i,i) = [0 0; -eye(2) eye(2)];
     end
     Mu(N,N) = [-eye(2) eye(2)];
 
