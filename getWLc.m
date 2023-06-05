@@ -14,7 +14,7 @@ Mi          = [zeros(nu,nx);
 Ei          = [-1;
       1;
       zeros(nx,nu);
-      zeros(nx,nu);
+      zeros(nx,nu)];
 
 
 bi          = [-umin;
@@ -48,7 +48,7 @@ for i = 1:N
     c = [bi;c];
 end
 
-L =Mcal*Gamma + Ecal
+L = Mcal*Gamma + Ecal;
 W = -Dcal - Mcal*Phi;
 
 
