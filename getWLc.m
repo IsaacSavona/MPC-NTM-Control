@@ -1,4 +1,4 @@
-function [ W, L, c, Xi] = getWLcXi(xmax, xmin, umax, umin, Gamma, Phi)
+function [W, L, c] = getWLc(xmax, xmin, umax, umin, Gamma, Phi)
 %GETWLC Summary of this function goes here
 %   Detailed explanation goes here
 
