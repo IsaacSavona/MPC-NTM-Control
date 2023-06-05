@@ -46,7 +46,7 @@ for j=2:(N)
   Omega = blkdiag(Omega,Q);
 end
 G = Gamma'*Omega*Gamma;
-[W, L, c] = getWLc(A,B,xmax,xmin,umax,umin,Gamma,Phi); % Contraint matrices
+[W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi); % Contraint matrices
 
 
 %% Quasi-LPV MPC Simulation %%
