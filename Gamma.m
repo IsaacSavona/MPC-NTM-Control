@@ -1,8 +1,7 @@
 function Gamma, Phi = GammaPhi(rho1, rho2, rho3)
-    global w_dep kappa taur Ts zeta rs;
-   
+
     N = length(rho1)
-    Gamma = zeros(N,N;
+    Gamma = zeros(N,N);
     Phi = zeros(N);
     A = A(rho1, rho2);
     B = B(rho3);
