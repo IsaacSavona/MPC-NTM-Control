@@ -26,10 +26,11 @@ Gamma = zeros(nx*N,nu*N);
 Gamma(1:nx,1:nu) = B(Rho3(1));
 for i = 2:N
     for j = 1:i
-        if i == j
+        if i ~= j
             %Gamma((i-1)*nx+1:nx*i,(j-1)*nu+1:j*nu) = A(Rho1(i-j),Rho2(i-j))*B(Rho3(j));
             Gamma((i-1)*nx+1:nx*i,(j-1)*nu+1:j*nu) = A(Rho1(i-j),Rho2(i-j))*Gamma((i-2)*nx+1:nx*(i-1),(j-1)*nu+1:j*nu);
-            % Basic idea: new Gamma = newA*previously_Multipled_A's
+            % Basic idea: new Gamma =
+            % newA*previously_Multipled_A's_from_same_column
         else
             Gamma((i-1)*nx+1:nx*i,(j-1)*nu+1:j*nu) = B(Rho3(j));
         end
