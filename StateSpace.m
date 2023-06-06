@@ -17,8 +17,8 @@
 % w~ws: w is behaving as expected and omega is blowing up quickly
 % If omega<0 --> ODE solution unstable and explodes after a short wiggle
 % Without constants the critical island size is 0 as there is no 
-% (passively) stabilizing (constant) term. Saturated behavior is similar as 
-% this is determined by the BS term.
+% (passively) stabilizing (constant) term. Saturation behavior, strangly
+% enough, is also gone completely without the constant term.
 
 
 %% Reset
@@ -52,8 +52,8 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 %% Simulation parameters
 Ts = 1e-3;          % [s] sampling time
-k_sim = 1000;       % [#] number of simulation time steps
-wi = 0.10;          % [m] 
+k_sim = 3000;       % [#] number of simulation time steps
+wi = 0.10;          % [m] initial island size
 omegai = 2*pi*1000; % [rad/s] initial frequency
 w = [wi,zeros(1,k_sim)];         % island width array as function of time
 omega = [omegai,zeros(1,k_sim)]; % frequency array as function of time
@@ -99,12 +99,12 @@ C = [- 4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2) ; ...
 for k = 1:k_sim
     
     rho1 = 1/(xc(1,k)^2+w_marg^2);
-    rho2 = (0.25+0.24*xc(1,k)/w_dep)/(1+1.5*xc(1,k)/w_dep+0.43*(xc(1,k)/w_dep)^2+0.64*(xc(1,k)/w_dep)^3);
-    rho3 = xc(1,k)^2/xc(2,k);
+    rho2 = xc(1,k)^2/xc(2,k);
+    rho3 = (0.25+0.24*xc(1,k)/w_dep)/(1+1.5*xc(1,k)/w_dep+0.43*(xc(1,k)/w_dep)^2+0.64*(xc(1,k)/w_dep)^3);
 
     A = [(1 + 4/3*kappa*Ts*j_BS*rho1)  0 ; ...
-         -Ts/zeta*rho3  (1-Ts/tau_E)];
-    B = [-(eta_CD*kappa*Ts)/(w_dep)*rho2 ; ...
+         -Ts/zeta*rho2  (1-Ts/tau_E)];
+    B = [-(eta_CD*kappa*Ts)/(w_dep)*rho3 ; ...
          0];
 
     xc(:,k+1) = A*xc(:,k) + B*u(k) + C;
@@ -128,12 +128,12 @@ u = ones(1,k_sim)*U_ECCD;
 for k = 1:k_sim
     
     rho1 = 1/(x(1,k)^2+w_marg^2);
-    rho2 = (0.25+0.24*x(1,k)/w_dep)/(1+1.5*x(1,k)/w_dep+0.43*(x(1,k)/w_dep)^2+0.64*(x(1,k)/w_dep)^3);
-    rho3 = x(1,k)^2/x(2,k);
+    rho2 = x(1,k)^2/x(2,k);
+    rho3 = (0.25+0.24*x(1,k)/w_dep)/(1+1.5*x(1,k)/w_dep+0.43*(x(1,k)/w_dep)^2+0.64*(x(1,k)/w_dep)^3);
 
     A = [(1 + 4/3*kappa*Ts*j_BS*rho1)  0 ; ...
-         -Ts/zeta*rho3  (1-Ts/tau_E)];
-    B = [-(eta_CD*kappa*Ts)/(w_dep)*rho2 ; ...
+         -Ts/zeta*rho2  (1-Ts/tau_E)];
+    B = [-(eta_CD*kappa*Ts)/(w_dep)*rho3 ; ...
          0];
 
     x(:,k+1) = A*x(:,k) + B*u(k);
