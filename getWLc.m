@@ -11,8 +11,8 @@ Mi          = [zeros(nu,nx);
     -eye(nx) %eye dim for x
     +eye(nx)];
 
-Ei          = [-1;
-      1;
+Ei          = [-eye(nu);
+      eye(nu);
       zeros(nx,nu);
       zeros(nx,nu)];
 
@@ -43,10 +43,16 @@ for i = 2:N
 end
 Ecal = [Ecal;zeros(size(MN,1),size(Ecal,2))];
 
-c = bN;
+%%% NOT COMP EFFICIENT
+% c = bN;
+% for i = 1:N
+%     c = [bi;c];
+% end
+c = zeros(size(bi,1)*N+size(bN,1),size(bi,2));
 for i = 1:N
-    c = [bi;c];
+    c(i) = bi;
 end
+c(N) = bN;
 
 L = Mcal*Gamma + Ecal;
 W = -Dcal - Mcal*Phi;
