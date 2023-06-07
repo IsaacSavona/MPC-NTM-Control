@@ -32,7 +32,7 @@ N = 3;    % prediction horizon
 Ts = 0.1; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
-x0 = [0;1000*2*pi]; % initial state (low width and high frequency does not need control)
+x0 = [0.2;1000*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
 C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
@@ -58,7 +58,7 @@ umax = max_power; % maximum on input vector
 
 %%% Cost Function
 Q = eye(nx);       % weights on width and freq deviation from reference
-r = [0; 1000*2*pi]; % reference state
+r = [min_width; 5000*2*pi]; % reference state
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -97,9 +97,12 @@ for k = 1:k_sim              % simulation loop over time samples
             %%% Run Quadprog
             [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             if exitflag ~= 1 % if quadprog failed, give a warning
-                warning('exitflag quadprog = %d\n', exitflag)
-                if exitflag == -2
+                if exitflag == 0
+                    disp('Solver stopped prematurely.')
+                elseif exitflag == -2
                     sprintf('Optimization problem is infeasible.')
+                else
+                    warning('exitflag quadprog = %d\n', exitflag)
                 end
             end
 
@@ -135,7 +138,13 @@ end
 
 %% Plot output and input
 figure('Position', [100 100 1000 300])
-subplot(1,2,1)
+subplot(1,2,1);
+plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
+xlabel('$t$ [s]','Interpreter','latex')
+ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
+title("Optimal Input")
+
+subplot(1,2,2);
 hold on
 yyaxis left
 plot(0:Ts:k_sim*Ts,xk(1,:)*100)
@@ -148,8 +157,4 @@ ylabel('$\omega$ [Hz]','Interpreter','latex')
 hold off
 xlabel('$t$ [s]','Interpreter','latex')
 legend('Output','Reference')
-
-subplot(1,2,2)
-plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
-xlabel('$t$ [s]','Interpreter','latex')
-ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
+title("Output")
