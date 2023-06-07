@@ -49,15 +49,15 @@ max_power = 2e6;  % [W]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
-%%% Constraint Polyhedrons
-% state constraints (A_x * x <= b_x)
-X_set = Polyhedron([-eye(nx);eye(nx)],[-xmin;xmax]);
-% input constraints (A_u * u <= b_u)
-U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
+% %%% Constraint Polyhedrons
+% % state constraints (A_x * x <= b_x)
+% X_set = Polyhedron([-eye(nx);eye(nx)],[-xmin;xmax]);
+% % input constraints (A_u * u <= b_u)
+% U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
 Q = eye(nx);       % weights on width and freq deviation from reference
-r = [0 1000*2*pi]; % reference state
+r = [0; 1000*2*pi]; % reference state
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -68,9 +68,9 @@ Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the
 for j=2:N
   Omega = blkdiag(Omega,Q);
 end
-R = repmat(r,N); % compact notation of R
+R = repmat(r,N,1)'; % compact notation of R
 G = 2*Gamma'*Omega*Gamma;                % quadratic part of cost function (U^T G U)
-F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R'); % linear part of cost function (F^T U)
+F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
 
 
