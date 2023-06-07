@@ -86,7 +86,7 @@ xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
 epsilon = 1e-14;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off'); % create optimization options
-%warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
+warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
 %%% Controller Iterations
 
@@ -94,7 +94,7 @@ for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
         
             %%% Run Quadprog
-            [U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             if exitflag ~= 1 % if quadprog failed, give a warning
                 warning('exitflag quadprog = %d\n', exitflag)
                 if exitflag == -2
@@ -116,9 +116,9 @@ for k = 1:k_sim              % simulation loop over time samples
                 Rho3(i) = rho3(xN(:,i),w_dep);
             end
             
-            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
+            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
-            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
+            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R'); % update linear part of cost function (F^T U)
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
             if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
@@ -128,7 +128,7 @@ for k = 1:k_sim              % simulation loop over time samples
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
     end
     
-    xk(:,k+1) = A(rho1, rho2, kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3, kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
+    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
 end
 
 
