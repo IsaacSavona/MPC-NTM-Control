@@ -1,4 +1,4 @@
-function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A, B)
+function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A, B, c)
 %ABN2PhiGamma Summary of this function goes here
 %   Detailed explanation goes here
 
