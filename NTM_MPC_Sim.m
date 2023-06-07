@@ -60,9 +60,9 @@ Q = eye(nx);       % weights on width and freq deviation from reference
 r = [0 1000*2*pi]; % reference state
 
 %%% Compact Formulation
-Rho1 = repmat(rho1(x0(:)),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
+Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
 Rho2 = repmat(rho2(x0(:)),1,N);
-Rho3 = repmat(rho3(x0(:)),1,N);
+Rho3 = repmat(rho3(x0(:),w_dep),1,N);
 [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C);
 Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
 for j=2:N
@@ -111,9 +111,9 @@ for k = 1:k_sim              % simulation loop over time samples
 
             for i = 1:N % predict until prediction horizon N starting from state k
                 xN(:,i+1) = A(Rho1(i), Rho2(i), kappa,Ts,j_BS,zeta,tau_E)*xN(:,i)+B(Rho3(i), kappa,Ts,eta_CD,w_dep)*U(i)+C; % the next predicted x is based on the optimized input sequence U
-                Rho1(i) = rho1(xN(:,i)); % update rho values with new predicted state
+                Rho1(i) = rho1(xN(:,i),w_marg); % update rho values with new predicted state
                 Rho2(i) = rho2(xN(:,i));
-                Rho3(i) = rho3(xN(:,i));
+                Rho3(i) = rho3(xN(:,i),w_dep);
             end
             
             [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C); % update Compact Formulation
