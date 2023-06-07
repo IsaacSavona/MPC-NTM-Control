@@ -1,4 +1,4 @@
-function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A, B, c)
+function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A, B, C)
 %ABN2PhiGamma Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -10,7 +10,7 @@ Gamma1 = B(Rho3(1));
 Lambda1 = C;
 nx = size(Phi1,1);
 nu = size(Gamma1,1);
-nc = size(c,2);
+nC = size(C,2);
 
 % Phi
 
@@ -44,11 +44,11 @@ end
 % i = 3 --> j = {1,2,3}4 --> i-j = {2,1,0}  --> {2*1,1,/}      -->
 % i = 4 --> j = {1,2,3,4} -> i-j = {3,2,1,0} -> {3*2*1,2*1,1,/} ->
 
-Lambda = zeros(nx*N,nc);
-Lambda(1:nx,1:nc) = Lambda1;
+Lambda = zeros(nx*N,nC);
+Lambda(1:nx,1:nC) = Lambda1;
 for i=2:N
     %(current A)x(previous row) + c
-    Lambda((i*nx)-(nx-1):i*nx, 1:nc) = A(Rho1(i),Rho2(i))*Lambda(((i-1)*nx)-(nx-1):(i-1)*nx, 1:nc) + c ;
+    Lambda((i*nx)-(nx-1):i*nx, 1:nC) = A(Rho1(i),Rho2(i))*Lambda(((i-1)*nx)-(nx-1):(i-1)*nx, 1:nC) + C ;
 end
 
 end
