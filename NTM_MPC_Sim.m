@@ -63,7 +63,7 @@ r = [0 1000*2*pi]; % reference state
 Rho1 = repmat(rho1(x0(:)),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
 Rho2 = repmat(rho2(x0(:)),1,N);
 Rho3 = repmat(rho3(x0(:)),1,N);
-[Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3);
+[Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C);
 Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
 for j=2:N
   Omega = blkdiag(Omega,Q);
@@ -71,7 +71,7 @@ end
 R = repmat(r,N); % compact notation of R
 G = 2*Gamma'*Omega*Gamma;                % quadratic part of cost function (U^T G U)
 F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % linear part of cost function (F^T U)
-[W, L, c] = getWLc(A,B,xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
+[W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
 
 
 %% Quasi-LPV MPC Simulation %%
@@ -116,9 +116,10 @@ for k = 1:k_sim              % simulation loop over time samples
                 Rho3(i) = rho3(xN(:,i));
             end
             
-            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3); % update Compact Formulation
+            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
             F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
+            [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
             if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
                 disp("converged at iterations " + iterations) % display at which iteration the sufficient Rho was found

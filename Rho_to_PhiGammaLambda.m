@@ -1,7 +1,7 @@
-function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A, B, C)
+function [ Phi, Gamma, Lambda ] =  Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C)
 %ABN2PhiGamma Summary of this function goes here
 %   Detailed explanation goes here
-
+%   A,B are function, C is a matrix
 N  = size(Rho1,1); 
 % nx = size(B,1);
 % nu = size(B,2);
