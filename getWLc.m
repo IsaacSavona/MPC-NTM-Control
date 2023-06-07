@@ -34,18 +34,14 @@ Mcal = MN;
 for i = 2:N
     Mcal = blkdiag(Mi,Mcal);
 end
-Mcal = [zeros(size(Mcal,1),size(Mcal,2));Mcal];
-disp(MN)
-disp(size(Mi))
-disp(size(Mcal))
-disp(Mcal)
+Mcal = [zeros(size(bi,1),size(Mcal,2));Mcal];
 
 %%% cal E %%%
 Ecal = Ei;
 for i = 2:N
     Ecal = blkdiag(Ecal,Ei);
 end
-Ecal = [Ecal;zeros(size(Ecal,1),size(Ecal,2))];
+Ecal = [Ecal;zeros(size(bN,1),size(Ecal,2))];
 
 %%% NOT COMP EFFICIENT
 % c = bN;
@@ -53,11 +49,11 @@ Ecal = [Ecal;zeros(size(Ecal,1),size(Ecal,2))];
 %     c = [bi;c];
 % end
 Ccal = zeros(size(bi,1)*N+size(bN,1),size(bi,2))
-size(Ccal)
 nbN = size(bN,1);
 nbi = size(bi,1);
+
 for i = 1:N
-    disp(size(Ccal((i*nbi)-(nbi-1):i*nbi, :)))
+    %disp(size(Ccal((i*nbi)-(nbi-1):i*nbi, :)))
     Ccal((i*nbi)-(nbi-1):i*nbi, :) = bi;
     %i = 1 --> ((i*nb)-(nb-1):i*nb, :)
     %i = 2 --> ((i*nb)-(nb-1):i*nb, :)
@@ -65,10 +61,6 @@ for i = 1:N
 end
 Ccal(((N+1)*nbN)-(nbN-1):(N+1)*nbN,:) = bN;
 
-disp(size(Ecal))
-disp(size(Mcal))
-disp(size(Gamma))
-disp(size(Ccal))
 L = Mcal*Gamma + Ecal;
 W = -Dcal - Mcal*Phi;
 c = Ccal - Mcal*Lambda;
