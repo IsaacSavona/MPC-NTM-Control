@@ -63,7 +63,7 @@ r = [0 1000*2*pi]; % reference state
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
 Rho2 = repmat(rho2(x0(:)),1,N);
 Rho3 = repmat(rho3(x0(:),w_dep),1,N);
-[Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C);
+[Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep);
 Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
 for j=2:N
   Omega = blkdiag(Omega,Q);
@@ -116,7 +116,7 @@ for k = 1:k_sim              % simulation loop over time samples
                 Rho3(i) = rho3(xN(:,i),w_dep);
             end
             
-            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C); % update Compact Formulation
+            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
             F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
