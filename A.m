@@ -1,3 +1,3 @@
-function A=A(rho1, rho2, kappa, taur, Ts, zeta, rs, a, TE)
-    A=[((4/3)*(kappa*rs/(0.82*taur))*Ts*rho1+1)  0; ((rho2*Ts)/(zeta*a^3)) (1-Ts/TE)];
+function A=A(rho1, rho2, kappa, Ts, j_BS, zeta, tau_E)
+    A=[(1+(4/3)*(kappa*Ts*j_BS*rho1))  0; (-(rho2*Ts)/(zeta)) (1-Ts/tau_E)];
 end

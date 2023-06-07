@@ -1,3 +1,3 @@
-function B=B(rho3, wdep, kappa, Ts, etaCD)
-    B=[(kappa*Ts*etaCD/wdep)*rho3 0];
+function B = B(rho3, kappa, Ts, eta_CD, w_dep)
+    B = [-(kappa*Ts*eta_CD/w_dep)*rho3; 0];
 end

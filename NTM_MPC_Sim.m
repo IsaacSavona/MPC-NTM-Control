@@ -110,7 +110,7 @@ for k = 1:k_sim              % simulation loop over time samples
             xN(:,1) = xk(:,k); % take value of the current state at k (x_{0|k}=x_{k})
 
             for i = 1:N % predict until prediction horizon N starting from state k
-                xN(:,i+1) = A(Rho1(i), Rho2(i))*xN(:,i)+B(Rho3(i))*U(i)+C; % the next predicted x is based on the optimized input sequence U
+                xN(:,i+1) = A(Rho1(i), Rho2(i), kappa,Ts,j_BS,zeta,tau_E)*xN(:,i)+B(Rho3(i), kappa,Ts,eta_CD,w_dep)*U(i)+C; % the next predicted x is based on the optimized input sequence U
                 Rho1(i) = rho1(xN(:,i)); % update rho values with new predicted state
                 Rho2(i) = rho2(xN(:,i));
                 Rho3(i) = rho3(xN(:,i));
@@ -127,7 +127,7 @@ for k = 1:k_sim              % simulation loop over time samples
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
     end
     
-    xk(:,k+1) = A(rho1, rho2)*xk(:,k)+B(rho3)*uk(:,k); % evolve state one time step
+    xk(:,k+1) = A(rho1, rho2, kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3, kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
 end
 
 
