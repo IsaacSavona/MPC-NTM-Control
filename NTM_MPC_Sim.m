@@ -64,13 +64,13 @@ Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by usin
 Rho2 = repmat(rho2(x0(:)),1,N);
 Rho3 = repmat(rho3(x0(:),w_dep),1,N);
 [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep);
-Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
+Omega = Q;          % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
 for j=2:N
   Omega = blkdiag(Omega,Q);
 end
-R = repmat(r,N,1)'; % compact notation of R
+R = repmat(r,N,1); % compact notation of R
 G = 2*Gamma'*Omega*Gamma;                % quadratic part of cost function (U^T G U)
-F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
+F = 2*Gamma'*Omega*(Phi*x0+Lambda-R');   % linear part of cost function (F^T U)
 [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
 
 
@@ -94,7 +94,10 @@ for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
         
             %%% Run Quadprog
-            [U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            disp([k,iterations])
+            disp([size(G),size(F)])
+            %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             if exitflag ~= 1 % if quadprog failed, give a warning
                 warning('exitflag quadprog = %d\n', exitflag)
                 if exitflag == -2
@@ -116,7 +119,7 @@ for k = 1:k_sim              % simulation loop over time samples
                 Rho3(i) = rho3(xN(:,i),w_dep);
             end
             
-            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, A,B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
+            [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
             F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
