@@ -1,4 +1,4 @@
-function [W, L, c] = getWLc(xmax, xmin, umax, umin, Gamma, Phi)
+function [W, L, c] = getWLc(xmax, xmin, umax, umin, Gamma, Phi, Lambda)
 %GETWLC Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -48,14 +48,16 @@ Ecal = [Ecal;zeros(size(MN,1),size(Ecal,2))];
 % for i = 1:N
 %     c = [bi;c];
 % end
-c = zeros(size(bi,1)*N+size(bN,1),size(bi,2));
+Ccal = zeros(size(bi,1)*N+size(bN,1),size(bi,2));
 for i = 1:N
-    c(i) = bi;
+    Ccal(i) = bi;
 end
-c(N) = bN;
+Ccal(N) = bN;
 
 L = Mcal*Gamma + Ecal;
 W = -Dcal - Mcal*Phi;
+c = Ccal - Mcal*Lambda;
+
 
 
 end
