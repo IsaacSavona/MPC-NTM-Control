@@ -8,7 +8,7 @@ w_marg = 0.02; % [m] critical width
 w_sat = 0.32;  % [m] saturation width
 tau_r = 293;   % [s] resistive time scale
 rs = 1.55;     % [m] radial location of island
-a = 2.0;       % [m] minor radius 
+a = 2.0;       % [m] minor radius
 eta_CD = 0.9;  % [#] current drive efficiency
 tau_E0 = 3.7;  % [s] energy confinement time without islands
 tau_E = tau_E0;% [s] currently NOT EXACT FORMULA
@@ -23,6 +23,7 @@ omega0 = 2*pi*420; % [rad/s] equilibrium frequency
 
 kappa = 16*mu0*Lq*rs^2/(0.82*tau_r*B_pol*pi);
 zeta = m*Cw*tau_A0^2*tau_w*a^3;
+
 
 %% Quasi-LPV MPC Model %%
 
@@ -64,13 +65,13 @@ Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by usin
 Rho2 = repmat(rho2(x0(:)),1,N);
 Rho3 = repmat(rho3(x0(:),w_dep),1,N);
 [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep);
-Omega = Q;          % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
+Omega = Q;       % compact notation of Q is a (N*nx)x(N*nx) matrix with Q on the (block)diagonal
 for j=2:N
   Omega = blkdiag(Omega,Q);
 end
-R = repmat(r,N,1); % compact notation of R
+R = repmat(r,N,1)'; % compact notation of R
 G = 2*Gamma'*Omega*Gamma;                % quadratic part of cost function (U^T G U)
-F = 2*Gamma'*Omega*(Phi*x0+Lambda-R');   % linear part of cost function (F^T U)
+F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
 
 
@@ -86,17 +87,14 @@ xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
 epsilon = 1e-14;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off'); % create optimization options
-%warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
+warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
 %%% Controller Iterations
 
 for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
-        
+       
             %%% Run Quadprog
-            disp([k,iterations])
-            disp([size(G),size(F)])
-            %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             if exitflag ~= 1 % if quadprog failed, give a warning
                 warning('exitflag quadprog = %d\n', exitflag)
@@ -108,7 +106,7 @@ for k = 1:k_sim              % simulation loop over time samples
             %%% Store states and inputs
             Uk(:,k) = U;       % stores all optimal inputs over prediction horizon for current k
             uk(:,k) = U(1:nu); % pick first value of U, the optimal input at the current time step
-        
+       
             %%% Update Rho
             xN(:,1) = xk(:,k); % take value of the current state at k (x_{0|k}=x_{k})
 
@@ -118,10 +116,10 @@ for k = 1:k_sim              % simulation loop over time samples
                 Rho2(i) = rho2(xN(:,i));
                 Rho3(i) = rho3(xN(:,i),w_dep);
             end
-            
+           
             [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
-            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
+            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R'); % update linear part of cost function (F^T U)
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
             if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
@@ -130,39 +128,28 @@ for k = 1:k_sim              % simulation loop over time samples
             end
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
     end
-    
-    xk(:,k+1) = A(rho1, rho2, kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3, kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
+   
+    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
 end
 
 
-%% Plot 4.1.1
-
-%%% Plots the states and input trajectories over time%%%
-figure
+%% Plot output and input
+figure('Position', [100 100 1000 300])
 subplot(1,2,1)
-xkPlot = xk';
 hold on
-stairs(0:k_sim,xk')
+yyaxis left
+plot(0:Ts:k_sim*Ts,xk(1,:)*100)
+plot(0:Ts:k_sim*Ts,r(1)*ones(k_sim+1)*100,'--')
+ylabel('$\mathrm{w}$ [cm]','Interpreter','latex')
+yyaxis right
+plot(0:Ts:k_sim*Ts,xk(2,:)/(2*pi))
+plot(0:Ts:k_sim*Ts,r(2)*ones(k_sim+1)/(2*pi),'--')
+ylabel('$\omega$ [Hz]','Interpreter','latex')
 hold off
-xlabel('$k$','Interpreter','latex')
-ylabel('$x$ Angle and Frequency Deviation','Interpreter','latex')
-% title('Constrained quasi-LPV MPC State Trajectory')
-%axis([0 k_sim -5 10])
-legend("$\mathrm{w}$ [m]","$\omega$ [Hz]");
-% legend("First Generator Angle Deviation [rad]", ...
-%     "First Generator Frequency Deviation [rad/s]", ...
-%     "Second Generator Angle Deviation [rad]", ...
-%     "Second Generator Frequency Deviation [rad/s]", ...
-%    'Interpreter','latex')
+xlabel('$t$ [s]','Interpreter','latex')
+legend('Output','Reference')
+
 subplot(1,2,2)
-hold on
-stairs(0:k_sim-1,uk')
-hold off
-xlabel('$k$','Interpreter','latex')
-ylabel('$u$','Interpreter','latex')
-sgtitle('Constrained quasi-LPV MPC State and Input Trajectory')
-%axis([0 k_sim -1 1])
-legend("$P_{ECCD}$ [W]");
-% legend("First Generator Mechanical Power [W]", ...
-%     "Second Generator Mechanical Power [W]", ...
-%    'Interpreter','latex')
+plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
+xlabel('$t$ [s]','Interpreter','latex')
+ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
