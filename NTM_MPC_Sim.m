@@ -94,7 +94,7 @@ for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
         
             %%% Run Quadprog
-            [U,~,exitflag] = quadprog(G,[],L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            [U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             if exitflag ~= 1 % if quadprog failed, give a warning
                 warning('exitflag quadprog = %d\n', exitflag)
                 if exitflag == -2
@@ -117,7 +117,8 @@ for k = 1:k_sim              % simulation loop over time samples
             end
             
             [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3); % update Compact Formulation
-            G = Gamma'*Omega*Gamma;                         % update cost function matrix
+            G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
+            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R); % update linear part of cost function (F^T U)
 
             if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
                 disp("converged at iterations " + iterations) % display at which iteration the sufficient Rho was found
