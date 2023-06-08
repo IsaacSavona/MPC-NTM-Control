@@ -25,7 +25,6 @@ end
 
 % Gamma
 Gamma = zeros(nx*N,nu2);
-size(Gamma)
 Gamma(1:nx,1:nu2) = Gamma1;
 for i = 2:N %rows
     for j = 1:i %columns
