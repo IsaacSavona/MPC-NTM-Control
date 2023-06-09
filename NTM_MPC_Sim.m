@@ -28,7 +28,7 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 100;    % prediction horizon
+N = 40;    % prediction horizon
 Ts = 0.01; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
@@ -52,7 +52,7 @@ C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 % umax = max_power; % maximum on input vector
 
 %%% Test Constraints
-min_width = 0.06; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
+min_width = -100; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
 max_width = 1000; % [m]
 min_freq = 0*2*pi;  % [rad/s]
 max_freq = 50000*2*pi; % [rad/s]
@@ -60,7 +60,7 @@ xmin = [min_width;min_freq]; % minimum on state vector
 xmax = [max_width;max_freq]; % maximum on state vector
 
 min_power = 0;    % [W]
-max_power = 2e6;  % [W]
+max_power = 2000e6;  % [W]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
@@ -71,9 +71,10 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = 0.0001*eye(nx);       % weights on width and freq deviation from reference
+Q = 2*eye(nx);       % weights on width and freq deviation from reference
 %Q = zeros(nx)
-r = [min_width; 5000*2*pi]; % reference state
+r = [0.06; 5000*2*pi]; % reference state
+%r = [min_width; 5000*2*pi]; % reference state
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -94,7 +95,7 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 
 %%% initialize variables
 k_sim = 25; % number of simulation time steps
-i_sim = 10; % max allowed number of iterations to reach numerical convergence
+i_sim = 100; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
