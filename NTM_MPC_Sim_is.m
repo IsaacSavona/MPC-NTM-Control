@@ -29,11 +29,11 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 %%% Model
 N = 40;    % prediction horizon
-Ts = 0.01; % sampling time
+Ts = 25e-6; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
 x0 = [0.2;1000*2*pi]; % initial state (low width and high frequency does not need control)
-%x0 = [2;1000*2*pi]; % initial state (low width and high frequency does not need control)
+%x0 = [0.15;100*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
 C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
@@ -71,7 +71,7 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = 2*eye(nx);       % weights on width and freq deviation from reference
+Q = 2e6*eye(nx);       % weights on width and freq deviation from reference
 %Q = zeros(nx)
 r = [0.06; 5000*2*pi]; % reference state
 %r = [min_width; 5000*2*pi]; % reference state
@@ -95,13 +95,13 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 
 %%% initialize variables
 k_sim = 25; % number of simulation time steps
-i_sim = 100; % max allowed number of iterations to reach numerical convergence
+i_sim = 10; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
-epsilon = 1e-9;           % maximum allowed numerical error (|Uk-Uold)|)
+epsilon = 1e-6;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 %warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
@@ -112,7 +112,9 @@ for k = 1:k_sim              % simulation loop over time samples
        
             %%% Run Quadprog
             %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            %[U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            fun = @
+            fmincon()
             if exitflag ~= 1 % if quadprog failed, give a warning
                 if exitflag == 0
                     disp('Solver stopped prematurely.')
@@ -131,7 +133,7 @@ for k = 1:k_sim              % simulation loop over time samples
             xN(:,1) = xk(:,k); % take value of the current state at k (x_{0|k}=x_{k})
 
             for i = 1:N % predict until prediction horizon N starting from state k
-                xN(:,i+1) = A(Rho1(i), Rho2(i), kappa,Ts,j_BS,zeta,tau_E)*xN(:,i)+B(Rho3(i), kappa,Ts,eta_CD,w_dep)*U(i)+C; % the next predicted x is based on the optimized input sequence U
+                xN(:,i+1) = A(Rho1(i), Rho2(i),kappa,Ts,j_BS,zeta,tau_E)*xN(:,i) + B(Rho3(i),kappa,Ts,eta_CD,w_dep)*U(i)+C; % the next predicted x is based on the optimized input sequence U
                 Rho1(i) = rho1(xN(:,i),w_marg); % update rho values with new predicted state
                 Rho2(i) = rho2(xN(:,i));
                 Rho3(i) = rho3(xN(:,i),w_dep);
