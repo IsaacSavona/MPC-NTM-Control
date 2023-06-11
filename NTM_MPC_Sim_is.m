@@ -36,7 +36,7 @@ x0 = [0.2;1000*2*pi]; % initial state (low width and high frequency does not nee
 %x0 = [0.15;100*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
-C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
+C = [-4/3*(kappa*Ts*j_BS*w_marg)/(w_marg^2+w_marg^2); Ts*omega0/tau_E0];
 
 %%% Constraints
 % min_width = 0.06; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
@@ -71,7 +71,7 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = 2e6*eye(nx);       % weights on width and freq deviation from reference
+Q = eye(nx);       % weights on width and freq deviation from reference
 %Q = zeros(nx)
 r = [0.06; 5000*2*pi]; % reference state
 %r = [min_width; 5000*2*pi]; % reference state
@@ -112,9 +112,9 @@ for k = 1:k_sim              % simulation loop over time samples
        
             %%% Run Quadprog
             %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            %[U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            fun = @
-            fmincon()
+            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            %fun = @
+            %fmincon()
             if exitflag ~= 1 % if quadprog failed, give a warning
                 if exitflag == 0
                     disp('Solver stopped prematurely.')
