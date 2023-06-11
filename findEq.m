@@ -27,11 +27,11 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 % trying by using Johannes' solution of w_crit=w_marg^2/w_sat
 xeq = [w_marg^2/w_sat; omega0];
-C = [-4/3*(kappa*Ts*j_BS*w_marg)/(w_marg^2+w_marg^2); Ts*omega0/tau_E0];
+C = [-4/3*(kappa*Ts*j_BS*w_marg)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 A=[(1+(4/3)*(kappa*Ts*j_BS*rho1(xeq,w_marg)))  0; (-(rho2(xeq)*Ts)/(zeta)) (1-Ts/tau_E)];
 dxdt = A*xeq + C;
 
-% trying with symbolic variables
+trying with symbolic variables
 syms w
 dwdt = (1+(4/3)*(kappa*Ts*j_BS*(1/(w^2+w_marg^2))))*w + C(1,:) == 0;
 w_crit = solve(dwdt,w)
