@@ -28,7 +28,7 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 40;    % prediction horizon
+N = 20;    % prediction horizon
 Ts = 0.01; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
@@ -95,13 +95,13 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 
 %%% initialize variables
 k_sim = 25; % number of simulation time steps
-i_sim = 100; % max allowed number of iterations to reach numerical convergence
+i_sim = 10; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
-epsilon = 1e-9;           % maximum allowed numerical error (|Uk-Uold)|)
+epsilon = 1e-4;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 %warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
