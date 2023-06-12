@@ -29,5 +29,5 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 xeq = [w_marg^2/w_sat; omega0];
 C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 A=[(1+(4/3)*(kappa*Ts*j_BS*rho1(xeq,w_marg)))  0; (-(rho2(xeq)*Ts)/(zeta)) (1-Ts/tau_E)];
-dx = A*xeq + C - xeq;
+dx = A*xeq + C;
 disp(dx(1))
