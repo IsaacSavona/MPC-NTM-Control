@@ -16,7 +16,7 @@ mu0 = 4e-7*pi; % [N/A^2] vacuum permaebility
 Lq = 0.87;     % [m] q-gradient length scale
 B_pol = 0.97;  % [T] poloidal field
 m = 2;         % [#] poloidal mode number
-Cw = 1;        % [#] UNKNOWN!!
+Cw = 1e3;        % [#] UNKNOWN!!
 tau_A0 = 3e-6; % [s] Alfvèn time
 tau_w = 0.188; % [s] resistive wall time
 omega0 = 2*pi*420; % [rad/s] equilibrium frequency
@@ -28,11 +28,11 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 3;    % prediction horizon
+N = 20;    % prediction horizon
 Ts = 1e-2; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
-x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
+x0 = [0.1;1000*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
 C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
@@ -50,16 +50,10 @@ max_power = 2e6;  % [W]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
-% %%% Constraint Polyhedrons
-% % state constraints (A_x * x <= b_x)
-% X_set = Polyhedron([-eye(nx);eye(nx)],[-xmin;xmax]);
-% % input constraints (A_u * u <= b_u)
-% U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
-
 %%% Cost Function
 %Q = eye(nx);       % weights on width and freq deviation from reference
-Q = [1e6 0; 0 1];
-r = [0.1; 5000*2*pi]; % reference state
+Q = [1 0; 0 1];
+r = [0.07; 1000*2*pi]; % reference state
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -71,7 +65,7 @@ for j=2:N
   Omega = blkdiag(Omega,Q);
 end
 R = repmat(r,N,1)'; % compact notation of R
-G = 2*Gamma'*Omega*Gamma;                % quadratic part of cost function (U^T G U)
+G = 2*Gamma'*Omega*Gamma;              % quadratic part of cost function (U^T G U)
 F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % contraint matrices
 
@@ -96,13 +90,15 @@ for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
        
             %%% Run Quadprog
-            % [U,~,exitflag] = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,options)
-            % 0.5*U^T*H*U+f^T*U is the minimized cost function
-            [U,~,exitflag] = quadprog(G,F, ...
+            %[U,~,exitflag] = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,options)
+            %0.5*U^T*H*U+f^T*U is the minimized cost function
+            [U,~,exitflag,output,lambda] = quadprog(G,F, ...
                                zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
                                [],[], ... % Aeq*U=beq
-                               zeros(N,1),ones(N,1)*2e6, ... % lb<U<ub
-                               ones(N,1)*2e6,opt); % optimize inputs U for prediction horizon given system and constraints
+                               zeros(N,1),ones(N,1)*2, ... % lb<U<ub
+                               ones(N,1)*0,opt); % optimize inputs U for prediction horizon given system and constraints
+            %[U,~,exitflag,output,lambda] = quadprog(G,F,[],[],[],[],[],[],[],opt);
+            
             %U = ones(N,1)*2e6;
             %exitflag = 1;
             %[U,~,exitflag] = quadprog(G,F,L,W*xk(:,k)+c,[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
@@ -133,6 +129,7 @@ for k = 1:k_sim              % simulation loop over time samples
             [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
             F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R'); % update linear part of cost function (F^T U)
+          
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
             if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
@@ -142,7 +139,7 @@ for k = 1:k_sim              % simulation loop over time samples
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
     end
    
-    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
+    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k) + B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
 end
 
 
