@@ -56,7 +56,8 @@ umax = max_power; % maximum on input vector
 
 % Q
 %Q = 1*eye(nx);
-Q = 1*eye(2);
+%Q = 1*eye(2);
+Q = [1 0;0 0];
 
 %% Nonlinear MPC - YALMIP (solver:fmincon)
 nx = 2;
@@ -79,18 +80,23 @@ end
 
 objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
 constraints = [constraints, xmin<=x(:,N+1)<=xmax];
-MPC_Nonlinear = optimizer(constraints,objective,[],x(:,1),u);
+ops = sdpsettings('verbose',1, 'debug',  1);
+MPC_Nonlinear = optimizer(constraints,objective,ops,x(:,1),u)
 % Check the solver of "MPC_Nonlinear": "Solver: FMINCON-STANDARD"
 
-k_sim = 20;
+%% Simulate
+k_sim = 100;
 xk = [x0 zeros(nx,k_sim)];
 uk = zeros(nu,k_sim);
 tk = zeros(1,k_sim);
 for k = 1:k_sim
     tic
-    Uk = MPC_Nonlinear(xk(:,k));
+    [Uk, diagnostics] = MPC_Nonlinear(xk(:,k));
     tk(:,k) = toc;
     uk(:,k) = Uk(1:nu);
+    if diagnostics == 1
+        error('The problem is infeasible');
+    end   
     % Use discrete nonlinear model
     A = [(1+(4/3)*(kappa*Ts*j_BS*(rho1(xk(:,k),w_marg))))+(Const(1,:)/xk(1,k)),  0; (-(rho2(xk(:,k))*Ts)/(zeta))+(Const(1,:)/xk(1,k)), (1-Ts/tau_E)+(Const(2,:)/xk(2,k))];
     B = [-(kappa*Ts*eta_CD/w_dep)*rho3(xk(:,k), w_dep); 0];
@@ -99,3 +105,26 @@ end
 data(1).x = xk;
 data(1).u = uk;
 data(1).t = tk;
+
+%% Plot
+% figure('Position', [100 100 1000 300])
+% subplot(1,2,1);
+% plot(Ts:Ts:k_sim*Ts,data(1).u/1e6,'color',"#77AC30")
+% xlabel('$t$ [s]','Interpreter','latex')
+% ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
+% title("Optimal Input")
+
+%subplot(1,2,2);
+hold on
+yyaxis left
+plot(0:Ts:k_sim*Ts,data(1).x(1,:)*100)
+plot(0:Ts:k_sim*Ts,r(1)*ones(k_sim+1)*100,'--')
+ylabel('$\mathrm{w}$ [cm]','Interpreter','latex')
+yyaxis right
+plot(0:Ts:k_sim*Ts,data(1).x(2,:)/(2*pi))
+plot(0:Ts:k_sim*Ts,r(2)*ones(k_sim+1)/(2*pi),'--')
+ylabel('$\omega$ [Hz]','Interpreter','latex')
+hold off
+xlabel('$t$ [s]','Interpreter','latex')
+legend('Output','Reference')
+title("Output")
