@@ -29,9 +29,9 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 %%% Model
 N = 20;    % prediction horizon
-Ts = 1e-2; % sampling time
-nx = 2;   % dimensions of state vector
-nu = 1;   % dimensions of input vector
+Ts = 0.1; % sampling time
+nx = 2;    % dimensions of state vector
+nu = 1;    % dimensions of input vector
 x0 = [0.1;1000*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
@@ -45,15 +45,14 @@ max_freq = 5000*2*pi; % [rad/s]
 xmin = [min_width;min_freq]; % minimum on state vector
 xmax = [max_width;max_freq]; % maximum on state vector
 
-min_power = 0;    % [W]
-max_power = 2e6;  % [W]
+min_power = 0;    % [MW]
+max_power = 2;    % [MW]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
 %%% Cost Function
-%Q = eye(nx);       % weights on width and freq deviation from reference
-Q = [1 0; 0 1];
-r = [0.07; 1000*2*pi]; % reference state
+Q = [1 0; 0 0]; % weights on width and freq deviation from reference
+r = [0.06; 1000*2*pi]; % reference state
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -81,7 +80,7 @@ Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (si
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
 epsilon = 1e-14;           % maximum allowed numerical error (|Uk-Uold)|)
-opt =  optimoptions('quadprog','Display','off'); % create optimization options
+opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
 %%% Controller Iterations
@@ -90,13 +89,14 @@ for k = 1:k_sim              % simulation loop over time samples
     for iterations = 1:i_sim % loop until numerically convergenced (or failed)
        
             %%% Run Quadprog
-            %[U,~,exitflag] = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,options)
-            %0.5*U^T*H*U+f^T*U is the minimized cost function
+            % [U,~,exitflag] = quadprog(H,f,A,b,Aeq,beq,lb,ub,x0,options)
+            % 0.5*U^T*H*U+f^T*U is the minimized cost function
+            % Optimize inputs U for prediction horizon given system and constraints
             [U,~,exitflag,output,lambda] = quadprog(G,F, ...
-                               zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
+                               [],[], ... % zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
                                [],[], ... % Aeq*U=beq
-                               zeros(N,1),ones(N,1)*2, ... % lb<U<ub
-                               ones(N,1)*0,opt); % optimize inputs U for prediction horizon given system and constraints
+                               [],ones(N,1)*2, ... % lb<U<ub
+                               [],opt); % initial guess
             %[U,~,exitflag,output,lambda] = quadprog(G,F,[],[],[],[],[],[],[],opt);
             
             %U = ones(N,1)*2e6;
@@ -128,7 +128,7 @@ for k = 1:k_sim              % simulation loop over time samples
            
             [Phi, Gamma, Lambda] = Rho_to_PhiGammaLambda(Rho1,Rho2,Rho3, @A,@B,C, kappa,Ts,j_BS,zeta,tau_E,eta_CD,w_dep); % update Compact Formulation
             G = 2*Gamma'*Omega*Gamma;                % update quadratic part of cost function (U^T G U)
-            F = 2*Gamma'*Omega*(Phi*x0(:)+Lambda-R'); % update linear part of cost function (F^T U)
+            F = 2*Gamma'*Omega*(Phi*xk(:,k)+Lambda-R'); % update linear part of cost function (F^T U)
           
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
@@ -146,7 +146,7 @@ end
 %% Plot output and input
 figure('Position', [100 100 1000 300])
 subplot(1,2,1);
-plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
+plot(Ts:Ts:k_sim*Ts,uk(:),'color',"#77AC30")
 xlabel('$t$ [s]','Interpreter','latex')
 ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
 title("Optimal Input")
@@ -159,7 +159,6 @@ plot(0:Ts:k_sim*Ts,r(1)*ones(k_sim+1)*100,'--')
 ylabel('$\mathrm{w}$ [cm]','Interpreter','latex')
 yyaxis right
 plot(0:Ts:k_sim*Ts,xk(2,:)/(2*pi))
-plot(0:Ts:k_sim*Ts,r(2)*ones(k_sim+1)/(2*pi),'--')
 ylabel('$\omega$ [Hz]','Interpreter','latex')
 hold off
 xlabel('$t$ [s]','Interpreter','latex')
