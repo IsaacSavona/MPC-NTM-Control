@@ -60,7 +60,7 @@ xmin = [min_width;min_freq]; % minimum on state vector
 xmax = [max_width;max_freq]; % maximum on state vector
 
 min_power = 0;    % [W]
-max_power = 2000e6;  % [W]
+max_power = 2e6;  % [W]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
@@ -71,8 +71,9 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = 2*eye(nx);       % weights on width and freq deviation from reference
+%Q = 2*eye(nx);       % weights on width and freq deviation from reference
 %Q = zeros(nx)
+Q = [1 0; 0 0];
 r = [0.06; 5000*2*pi]; % reference state
 %r = [min_width; 5000*2*pi]; % reference state
 

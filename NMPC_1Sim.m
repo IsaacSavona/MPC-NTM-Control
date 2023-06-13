@@ -2,6 +2,7 @@
 clear all
 close all
 
+
 %% Physics parameters
 j_BS = 73e3;   % [A/m^2] bootstrap current density
 w_dep = 0.024; % [m] deposition width
@@ -17,10 +18,11 @@ mu0 = 4e-7*pi; % [N/A^2] vacuum permaebility
 Lq = 0.87;     % [m] q-gradient length scale
 B_pol = 0.97;  % [T] poloidal field
 m = 2;         % [#] poloidal mode number
-Cw = 1e3;        % [#] UNKNOWN!!
+Cw = 1e3;      % [#] UNKNOWN!!
 tau_A0 = 3e-6; % [s] Alfvèn time
 tau_w = 0.188; % [s] resistive wall time
 omega0 = 2*pi*420; % [rad/s] equilibrium frequency
+
 kappa = 16*mu0*Lq*rs^2/(0.82*tau_r*B_pol*pi);
 zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
@@ -37,6 +39,7 @@ nu = 1; % dimensions of input
 
 k_sim = 1000; % number of simulation time steps
 dt = 1e-2;    % simulation step size
+
 
 %% Constraints
 min_width = 0.05; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
@@ -69,7 +72,7 @@ end
 
 % Apply terminal constraints
 objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
-%constraints = [constraints, xmin<=x(:,N+1)<=xmax];
+constraints = [constraints, xmin(2)<=x(2,N+1)<=xmax(2), x(1,N+1)<=xmax(1)];
 % Define optimizer
 options = sdpsettings('verbose',1);
 MPC_Nonlinear = optimizer(constraints,objective,options,x(:,1),u);
