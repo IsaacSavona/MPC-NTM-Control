@@ -52,7 +52,7 @@ umax = max_power; % maximum on input vector
 
 %%% Cost Function
 %Q = eye(nx);       % weights on width and freq deviation from reference
-Q = [1 0; 0 1];
+Q = [1 0; 0 0];
 r = [0.07; 1000*2*pi]; % reference state
 
 %%% Compact Formulation

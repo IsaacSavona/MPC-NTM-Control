@@ -52,7 +52,7 @@ C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 % umax = max_power; % maximum on input vector
 
 %%% Test Constraints
-min_width = -100; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
+min_width = 0; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
 max_width = 1000; % [m]
 min_freq = 0*2*pi;  % [rad/s]
 max_freq = 50000*2*pi; % [rad/s]
@@ -60,7 +60,7 @@ xmin = [min_width;min_freq]; % minimum on state vector
 xmax = [max_width;max_freq]; % maximum on state vector
 
 min_power = 0;    % [W]
-max_power = 2e6;  % [W]
+max_power = 2;  % [W]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
@@ -113,7 +113,14 @@ for k = 1:k_sim              % simulation loop over time samples
        
             %%% Run Quadprog
             %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            %[U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt);
+            [U,~,exitflag,output,lambda] = quadprog(G,F, ...
+                               zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
+                               [],[], ... % Aeq*U=beq
+                               zeros(N,1),ones(N,1)*2, ... % lb<U<ub
+                               ones(N,1)*0,opt); % optimize inputs U for prediction horizon given system and constraints
+            %quadprog()
             if exitflag ~= 1 % if quadprog failed, give a warning
                 if exitflag == 0
                     disp('Solver stopped prematurely.')
