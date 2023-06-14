@@ -3,6 +3,7 @@ clear all
 
 %% Physics parameters
 j_BS = 73e3;   % [A/m^2] bootstrap current density
+%w_dep = 0.024; % [m] deposition width
 w_dep = 0.024; % [m] deposition width
 w_marg = 0.02; % [m] critical width
 w_sat = 0.32;  % [m] saturation width
@@ -24,12 +25,13 @@ omega0 = 2*pi*420; % [rad/s] equilibrium frequency
 kappa = 16*mu0*Lq*rs^2/(0.82*tau_r*B_pol*pi);
 zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
+Anoise = 2e-3;
 
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 5;    % prediction horizon
-Ts = 0.001; % sampling time
+N = 30;    % prediction horizon
+Ts = 1e-3; % sampling time
 %Ts = 1e-4;
 nx = 2;    % dimensions of state vector
 nu = 1;    % dimensions of input vector
@@ -59,10 +61,11 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = [13 0; 0 0]; % weights on width and freq deviation from reference
+Q = [13 0; 0 13]; % weights on width and freq deviation from reference
 %Q = [13 0; 0 1e-9]; % weights on width and freq deviation from reference
-%r = [0.06; 1000*2*pi]; % reference state
-r = [0.00050; 200*2*pi]; % reference state just below 0.00125
+%r = [0.32; 1000*2*pi]; % reference state
+%r = [0.00050; 200*2*pi]; % reference state just below 0.00125
+r = [0; 200*2*pi];
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -82,7 +85,7 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 %% Quasi-LPV MPC Simulation %%
 
 %%% initialize variables
-k_sim = 2000; % number of simulation time steps
+k_sim = 1000; % number of simulation time steps
 i_sim = 20; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
@@ -145,17 +148,17 @@ for k = 1:k_sim              % simulation loop over time samples
                 %disp(Uk(:,k)*1e3)
                 %disp(abs(Uold - Uk(:,k)))
                 disp("converged at iterations " + iterations) % display at which iteration the sufficient Rho was found
-                %Uold = ones(size(Uk(:,k)));
-                Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
+                Uold = ones(size(Uk(:,k)));
+                %Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
                 break;                                        % if numerically converged, then no need to iterate further
             end
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
-            %if iterations == i_sim
-                %Uold = ones(size(Uk(:,k)));
-            %end
+            if iterations == i_sim
+                Uold = ones(size(Uk(:,k)));
+            end
     end
    
-    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
+    xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C;%+(rand(size(C))-0.46)*Anoise; % evolve state one time step
 end
 
 
