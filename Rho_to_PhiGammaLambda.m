@@ -34,7 +34,8 @@ for i = 2:N %rows
             % Basic idea: new Gamma =
             % newA*previously_Multipled_A's_from_same_column
         else
-            Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = B(Rho3(j), kappa,Ts,eta_CD,w_dep);
+            %Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = B(Rho3(j), kappa,Ts,eta_CD,w_dep);
+            Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = B(Rho3(i), kappa,Ts,eta_CD,w_dep);
         end
         %Gamma((i-1)*nx+1:nx*i,(j-1)*nu+1:j*nu) = Gamma(j-1,:)*A(Rho1(i-j),Rho2(i-j))*B(Rho3(i));
     end
