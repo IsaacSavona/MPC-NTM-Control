@@ -29,7 +29,7 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Controller and simulation parameters
 N = 20;                % prediction horizon
 Ts = 0.01;             % controller sampling time
-r = [0.06; 5000*2*pi]; % reference state (maybe needs to be different)
+r = [0.00125; 5000*2*pi]; % reference state (maybe needs to be different)
 x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
 Q = [1 0; 0 0];        % no frequency error to reference taken into account!
 
@@ -64,15 +64,17 @@ for i = 1:N
     % Use Nonlinear Dynamics
     Amat = A(rho1(x(:,i),w_marg), rho2(x(:,i)), kappa,Ts,j_BS,zeta,tau_E);
     Bmat = B(rho3(x(:,i),w_dep), kappa,Ts,eta_CD,w_dep);
-    constraints = [constraints, x(:,i+1)==Amat*x(:,i)+Bmat*u(:,i)+Const*Ts];
-    constraints = [constraints, umin<=u(:,i)<=umax, x(:,i)<=xmax, xmin(2)<=x(2,i)];
+    constraints = [constraints,x(:,i+1)==Amat*x(:,i)+Bmat*u(:,i)+Const*Ts, ... % the state equation should always be met
+                   umin<=u(:,i)<=umax, x(:,i)<=xmax, xmin(2)<=x(2,i)'];%, ... % input and state constraints
+                   %diff(u(:,i))]; % constraint of change in input to prevent 
+    
 end
 
 % Apply terminal constraints
 objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
 constraints = [constraints, xmin(2)<=x(2,N+1)<=xmax(2), x(1,N+1)<=xmax(1)];
 % Define optimizer
-options = sdpsettings('verbose',1);
+options = sdpsettings('verbose',0);
 MPC_Nonlinear = optimizer(constraints,objective,options,x(:,1),u);
 % Check the solver of "MPC_Nonlinear": "Solver: FMINCON-STANDARD"
 
@@ -112,11 +114,12 @@ data(1).t = tk;
 
 %% Plot output and optimal input
 figure('Position', [100 100 1000 300])
+
 subplot(1,2,1);
 plot(Ts:Ts:k_sim*Ts,uk(:),'color',"#77AC30")
 xlabel('$t$ [s]','Interpreter','latex')
 ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
-title("Optimal Input")
+title(sprintf("Optimal input with $N =$ %d, $T_s =$ %0.1e s",N,Ts),'Interpreter','latex')
 
 subplot(1,2,2);
 hold on
@@ -130,4 +133,4 @@ ylabel('$\omega$ [Hz]','Interpreter','latex')
 hold off
 xlabel('$t$ [s]','Interpreter','latex')
 legend('Output','Reference')
-title("Output")
+title(sprintf("Output with $\\mathrm{w}_0 =$ %0.3f cm, $\\omega_0 =$ %0.0f Hz",x0(1)*100,x0(2)/2/pi),'Interpreter','latex')
