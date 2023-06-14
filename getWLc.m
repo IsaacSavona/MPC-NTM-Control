@@ -33,14 +33,16 @@ Mcal = MN;
 for i = 2:N
     Mcal = blkdiag(Mi,Mcal);
 end
-Mcal = [zeros(nbi,size(Mcal,2));Mcal];
+%Mcal = [zeros(nbi,size(Mcal,2));Mcal];
+Mcal = [zeros(size(Mi,1),size(Mcal,2));Mcal];
 
 %%% cal E %%%
 Ecal = Ei;
 for i = 2:N
     Ecal = blkdiag(Ecal,Ei);
 end
-Ecal = [Ecal;zeros(nbN,size(Ecal,2))];
+%Ecal = [Ecal;zeros(nbN,size(Ecal,2))];
+Ecal = [Ecal;zeros(size(MN,1),size(Ecal,2))];
 
 %%% cal C %%%
 Ccal = zeros(nbi*N+nbN,size(bi,2));
@@ -52,8 +54,8 @@ for i = 1:N
 end
 Ccal(((N+1)*nbN)-(nbN-1):(N+1)*nbN,:) = bN;
 
-L = Mcal*Gamma + Ecal;
 W = -Dcal - Mcal*Phi;
+L = Mcal*Gamma + Ecal;
 c = Ccal - Mcal*Lambda;
 
 end

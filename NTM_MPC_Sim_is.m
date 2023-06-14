@@ -16,7 +16,7 @@ mu0 = 4e-7*pi; % [N/A^2] vacuum permaebility
 Lq = 0.87;     % [m] q-gradient length scale
 B_pol = 0.97;  % [T] poloidal field
 m = 2;         % [#] poloidal mode number
-Cw = 1;        % [#] UNKNOWN!!
+Cw = 1e3;      % [#] UNKNOWN!!
 tau_A0 = 3e-6; % [s] Alfvèn time
 tau_w = 0.188; % [s] resistive wall time
 omega0 = 2*pi*420; % [rad/s] equilibrium frequency
@@ -28,39 +28,27 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 40;    % prediction horizon
-Ts = 25e-6; % sampling time
-nx = 2;   % dimensions of state vector
-nu = 1;   % dimensions of input vector
-x0 = [0.2;1000*2*pi]; % initial state (low width and high frequency does not need control)
+N = 5;    % prediction horizon
+Ts = 0.001; % sampling time
+%Ts = 1e-4;
+nx = 2;    % dimensions of state vector
+nu = 1;    % dimensions of input vector
+x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
 %x0 = [0.15;100*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
-C = [-4/3*(kappa*Ts*j_BS*w_marg)/(w_marg^2+w_marg^2); Ts*omega0/tau_E0];
+C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 
 %%% Constraints
-% min_width = 0.06; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
-% max_width = 0.15; % [m]
-% min_freq = 100*2*pi;  % [rad/s]
-% max_freq = 5000*2*pi; % [rad/s]
-% xmin = [min_width;min_freq]; % minimum on state vector
-% xmax = [max_width;max_freq]; % maximum on state vector
-% 
-% min_power = 0;    % [W]
-% max_power = 2e6;  % [W]
-% umin = min_power; % minimum on input vector
-% umax = max_power; % maximum on input vector
-
-%%% Test Constraints
-min_width = -100; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
-max_width = 1000; % [m]
+min_width = 0;%0.06; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
+max_width = 100; % [m]
 min_freq = 0*2*pi;  % [rad/s]
-max_freq = 50000*2*pi; % [rad/s]
+max_freq = 5000*2*pi; % [rad/s]
 xmin = [min_width;min_freq]; % minimum on state vector
 xmax = [max_width;max_freq]; % maximum on state vector
 
-min_power = 0;    % [W]
-max_power = 2000e6;  % [W]
+min_power = 0;    % [MW]
+max_power = 2;    % [MW]
 umin = min_power; % minimum on input vector
 umax = max_power; % maximum on input vector
 
@@ -71,10 +59,10 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = eye(nx);       % weights on width and freq deviation from reference
-%Q = zeros(nx)
-r = [0.06; 5000*2*pi]; % reference state
-%r = [min_width; 5000*2*pi]; % reference state
+Q = [13 0; 0 0]; % weights on width and freq deviation from reference
+%Q = [13 0; 0 1e-9]; % weights on width and freq deviation from reference
+%r = [0.06; 1000*2*pi]; % reference state
+r = [0.00050; 200*2*pi]; % reference state just below 0.00125
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -94,14 +82,14 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 %% Quasi-LPV MPC Simulation %%
 
 %%% initialize variables
-k_sim = 25; % number of simulation time steps
-i_sim = 10; % max allowed number of iterations to reach numerical convergence
+k_sim = 2000; % number of simulation time steps
+i_sim = 20; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
-epsilon = 1e-6;           % maximum allowed numerical error (|Uk-Uold)|)
+epsilon = 1e-14;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 %warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 
@@ -112,9 +100,17 @@ for k = 1:k_sim              % simulation loop over time samples
        
             %%% Run Quadprog
             %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            [U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            %fun = @
-            %fmincon()
+            %[U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
+            [U,~,exitflag,output,lambda] = quadprog(G,F, ...
+                               zeros(3,N),[-xk(1,k);xk(2,k);xk(1,k)]+[0.15;-100*2*pi;0], ... % A*U<b
+                               [],[], ... % Aeq*U=beq
+                               zeros(N,1),ones(N,1)*2, ... % lb<U<ub
+                               [],opt); % initial guess
+%             [U,~,exitflag,output,lambda] = quadprog(G,F, ...
+%                                [],[], ... % zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
+%                                [],[], ... % Aeq*U=beq
+%                                zeros(N,1),ones(N,1)*2, ... % lb<U<ub
+%                                [],opt); % initial guess
             if exitflag ~= 1 % if quadprog failed, give a warning
                 if exitflag == 0
                     disp('Solver stopped prematurely.')
@@ -144,11 +140,19 @@ for k = 1:k_sim              % simulation loop over time samples
             F = 2*Gamma'*Omega*(Phi*xk(:,k)+Lambda-R'); % update linear part of cost function (F^T U)
             [W, L, c] = getWLc(xmax,xmin,umax,umin,Gamma,Phi,Lambda); % update contraint matrices
 
-            if (sum(abs(Uold - Uk(:,k))) < epsilon)           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
+            if (abs(Uold - Uk(:,k)) < epsilon*ones(size(Uold)))           % numerical convergence if change in Uk compared to previous iteration (Uold) is small
+                %disp(Uold*1e3)
+                %disp(Uk(:,k)*1e3)
+                %disp(abs(Uold - Uk(:,k)))
                 disp("converged at iterations " + iterations) % display at which iteration the sufficient Rho was found
+                %Uold = ones(size(Uk(:,k)));
+                Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
                 break;                                        % if numerically converged, then no need to iterate further
             end
             Uold = Uk(:,k); % set the new previous Uk(i-1) as the current Uk(i)
+            %if iterations == i_sim
+                %Uold = ones(size(Uk(:,k)));
+            %end
     end
    
     xk(:,k+1) = A(rho1(xk(:,k),w_marg), rho2(xk(:,k)), kappa,Ts,j_BS,zeta,tau_E)*xk(:,k)+B(rho3(xk(:,k),w_dep), kappa,Ts,eta_CD,w_dep)*uk(:,k)+C; % evolve state one time step
@@ -158,7 +162,7 @@ end
 %% Plot output and input
 figure('Position', [100 100 1000 300])
 subplot(1,2,1);
-plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
+plot(Ts:Ts:k_sim*Ts,uk(:),'color',"#77AC30")
 xlabel('$t$ [s]','Interpreter','latex')
 ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
 title("Optimal Input")

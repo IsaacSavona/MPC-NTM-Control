@@ -16,7 +16,7 @@ mu0 = 4e-7*pi; % [N/A^2] vacuum permaebility
 Lq = 0.87;     % [m] q-gradient length scale
 B_pol = 0.97;  % [T] poloidal field
 m = 2;         % [#] poloidal mode number
-Cw = 1;        % [#] UNKNOWN!!
+Cw = 1e3;      % [#] UNKNOWN!!
 tau_A0 = 3e-6; % [s] Alfvèn time
 tau_w = 0.188; % [s] resistive wall time
 omega0 = 2*pi*420; % [rad/s] equilibrium frequency
@@ -28,11 +28,11 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 20;    % prediction horizon
+N = 5;    % prediction horizon
 Ts = 0.01; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
-x0 = [0.2;1000*2*pi]; % initial state (low width and high frequency does not need control)
+x0 = [0.1;1000*2*pi]; % initial state (low width and high frequency does not need control)
 %x0 = [2;1000*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%% System
@@ -95,7 +95,7 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 %% Quasi-LPV MPC Simulation %%
 
 %%% initialize variables
-k_sim = 25; % number of simulation time steps
+k_sim = 100; % number of simulation time steps
 i_sim = 10; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
@@ -164,7 +164,7 @@ end
 %% Plot output and input
 figure('Position', [100 100 1000 300])
 subplot(1,2,1);
-plot(Ts:Ts:k_sim*Ts,uk(:)/1e6,'color',"#77AC30")
+plot(Ts:Ts:k_sim*Ts,uk(:),'color',"#77AC30")
 xlabel('$t$ [s]','Interpreter','latex')
 ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
 title("Optimal Input")
