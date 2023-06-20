@@ -30,7 +30,7 @@ Anoise = 2e-3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 30;    % prediction horizon
+N = 15;    % prediction horizon
 Ts = 1e-3; % sampling time
 %Ts = 1e-4;
 nx = 2;    % dimensions of state vector
@@ -43,7 +43,7 @@ C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 
 %%% Constraints
 min_width = 0;%0.06; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
-max_width = 100; % [m]
+max_width = 0.15; % [m]
 min_freq = 0*2*pi;  % [rad/s]
 max_freq = 5000*2*pi; % [rad/s]
 xmin = [min_width;min_freq]; % minimum on state vector
@@ -61,11 +61,11 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = [13 0; 0 13]; % weights on width and freq deviation from reference
+Q = [1 0; 0 0]; % weights on width and freq deviation from reference
 %Q = [13 0; 0 1e-9]; % weights on width and freq deviation from reference
 %r = [0.32; 1000*2*pi]; % reference state
 %r = [0.00050; 200*2*pi]; % reference state just below 0.00125
-r = [0; 200*2*pi];
+r = [0.0005; 200*2*pi];
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -92,7 +92,7 @@ uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ..
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
-epsilon = 1e-14;           % maximum allowed numerical error (|Uk-Uold)|)
+epsilon = 1e-9;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 %warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 

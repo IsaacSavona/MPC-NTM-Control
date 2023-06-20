@@ -28,7 +28,7 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 5;    % prediction horizon
+N = 10;    % prediction horizon
 Ts = 0.01; % sampling time
 nx = 2;   % dimensions of state vector
 nu = 1;   % dimensions of input vector
@@ -53,7 +53,7 @@ C = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); Ts*omega0/tau_E0];
 
 %%% Test Constraints
 min_width = 0; % [m] RANDOM VALUE based on 2.4cm deposition width + error in dep. pos.
-max_width = 1000; % [m]
+max_width = 0.15; % [m]
 min_freq = 0*2*pi;  % [rad/s]
 max_freq = 50000*2*pi; % [rad/s]
 xmin = [min_width;min_freq]; % minimum on state vector
@@ -74,7 +74,8 @@ umax = max_power; % maximum on input vector
 %Q = 2*eye(nx);       % weights on width and freq deviation from reference
 %Q = zeros(nx)
 Q = [1 0; 0 0];
-r = [0.06; 5000*2*pi]; % reference state
+%r = [0.0005; 5000*2*pi]; % reference state
+r = [0; 5000*2*pi]; % reference state
 %r = [min_width; 5000*2*pi]; % reference state
 
 %%% Compact Formulation
@@ -102,7 +103,7 @@ uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ..
 Uk = zeros(nu*N,k_sim);    % all N predicted inputs at each k_sim time steps (size=(N) x ((nu) x (k_sim)))
 xN = repmat(zeros(size(x0)),1,N); % N predicted inputs at current k only (size=(nx) x (N))
 Uold = ones(size(Uk));     % Uk from previous (numerical convergence) iteration
-epsilon = 1e-4;           % maximum allowed numerical error (|Uk-Uold)|)
+epsilon = 1e-9;           % maximum allowed numerical error (|Uk-Uold)|)
 opt =  optimoptions('quadprog','Display','off','MaxIterations',400); % create optimization options
 %warning('off','optim:quadprog:HessianNotSym');   % warn if things go bad??
 

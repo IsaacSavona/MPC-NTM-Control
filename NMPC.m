@@ -27,16 +27,17 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 
 %% Controller and simulation parameters
-N = 20;                % prediction horizon
-Ts = 0.01;             % controller sampling time
-r = [0.00125; 5000*2*pi]; % reference state (maybe needs to be different)
+N = 10;                % prediction horizon
+Ts = 0.1;             % controller sampling time
+%r = [0.00125; 5000*2*pi]; % reference state (maybe needs to be different)
+r = [0.10; 5000*2*pi]; % reference state (maybe needs to be different)
 x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
 Q = [1 0; 0 0];        % no frequency error to reference taken into account!
 
 nx = 2; % dimensions of state
 nu = 1; % dimensions of input
 
-k_sim = 100; % number of simulation time steps
+k_sim = 50; % number of simulation time steps
 
 
 %% Constraints
@@ -64,7 +65,7 @@ for i = 1:N
     % Use Nonlinear Dynamics
     Amat = A(rho1(x(:,i),w_marg), rho2(x(:,i)), kappa,Ts,j_BS,zeta,tau_E);
     Bmat = B(rho3(x(:,i),w_dep), kappa,Ts,eta_CD,w_dep);
-    constraints = [constraints,x(:,i+1)==Amat*x(:,i)+Bmat*u(:,i)+Const*Ts, ... % the state equation should always be met
+    constraints = [constraints,x(:,i+1)==Amat*x(:,i)+Bmat*u(:,i)+Const, ... % the state equation should always be met
                    umin<=u(:,i)<=umax, x(:,i)<=xmax, xmin(2)<=x(2,i)'];%, ... % input and state constraints
                    %diff(u(:,i))]; % constraint of change in input to prevent 
     
@@ -74,7 +75,7 @@ end
 objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
 constraints = [constraints, xmin(2)<=x(2,N+1)<=xmax(2), x(1,N+1)<=xmax(1)];
 % Define optimizer
-options = sdpsettings('verbose',0);
+options = sdpsettings('verbose',0,'solver','ipopt');
 MPC_Nonlinear = optimizer(constraints,objective,options,x(:,1),u);
 % Check the solver of "MPC_Nonlinear": "Solver: FMINCON-STANDARD"
 
