@@ -24,13 +24,14 @@ if N>1
 end
 
 % Gamma
-Gamma = zeros(nx*N,nu2);
+Gamma = zeros(nx*N,nu2*N);
 Gamma(1:nx,1:nu2) = Gamma1;
 for i = 2:N %rows
     for j = 1:i %columns
         if i ~= j
             %Gamma((i-1)*nx+1:nx*i,(j-1)*nu+1:j*nu) = A(Rho1(i-j),Rho2(i-j))*B(Rho3(j));
-            Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = A(Rho1(i-j),Rho2(i-j), kappa,Ts,j_BS,zeta,tau_E)*Gamma((i-2)*nx+1:nx*(i-1),(j-1)*nu2+1:j*nu2);
+            %Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = A(Rho1(i-j),Rho2(i-j), kappa,Ts,j_BS,zeta,tau_E)*Gamma((i-2)*nx+1:nx*(i-1),(j-1)*nu2+1:j*nu2);
+            Gamma((i-1)*nx+1:nx*i,(j-1)*nu2+1:j*nu2) = A(Rho1(i-j+1),Rho2(i-j+1), kappa,Ts,j_BS,zeta,tau_E)*Gamma((i-2)*nx+1:nx*(i-1),(j-1)*nu2+1:j*nu2);
             % Basic idea: new Gamma =
             % newA*previously_Multipled_A's_from_same_column
         else
