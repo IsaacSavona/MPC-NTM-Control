@@ -27,17 +27,17 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 
 %% Controller and simulation parameters
-N = 10;                % prediction horizon
+N = 30;                % prediction horizon
 Ts = 0.1;             % controller sampling time
 %r = [0.00125; 5000*2*pi]; % reference state (maybe needs to be different)
-r = [0.10; 5000*2*pi]; % reference state (maybe needs to be different)
-x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
+r = [0.1; 5000*2*pi]; % reference state (maybe needs to be different)
+x0 = [0.06;1000*2*pi]; % initial state (low width and high frequency does not need control)
 Q = [1 0; 0 0];        % no frequency error to reference taken into account!
 
 nx = 2; % dimensions of state
 nu = 1; % dimensions of input
 
-k_sim = 50; % number of simulation time steps
+k_sim = 100; % number of simulation time steps
 
 
 %% Constraints
@@ -75,7 +75,7 @@ end
 objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
 constraints = [constraints, xmin(2)<=x(2,N+1)<=xmax(2), x(1,N+1)<=xmax(1)];
 % Define optimizer
-options = sdpsettings('verbose',0,'solver','ipopt');
+options = sdpsettings('verbose',0,'solver','fmincon');
 MPC_Nonlinear = optimizer(constraints,objective,options,x(:,1),u);
 % Check the solver of "MPC_Nonlinear": "Solver: FMINCON-STANDARD"
 
