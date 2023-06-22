@@ -1,7 +1,6 @@
 %% Reset
 clear all
 
-
 %% Physics parameters
 j_BS = 73e3;   % [A/m^2] bootstrap current density
 w_dep = 0.024; % [m] deposition width
@@ -27,12 +26,16 @@ zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
 
 %% Controller and simulation parameters
-N = 30;                % prediction horizon
+N = 20;                % prediction horizon
 Ts = 0.1;             % controller sampling time
 %r = [0.00125; 5000*2*pi]; % reference state (maybe needs to be different)
-r = [0.1; 5000*2*pi]; % reference state (maybe needs to be different)
-x0 = [0.06;1000*2*pi]; % initial state (low width and high frequency does not need control)
-Q = [1 0; 0 0];        % no frequency error to reference taken into account!
+%r = [0.0835; 5000*2*pi]; % reference state (maybe needs to be different)
+%x0 = [0.06;1000*2*pi]; % initial state (low width and high frequency does not need control)
+r = [0.04; 5000*2*pi];
+x0 = [0.1;1000*2*pi];
+%x0 = r;
+Q = [100 0; 0 1e-8];        % no frequency error to reference taken into account!
+R = 0.0001;
 
 nx = 2; % dimensions of state
 nu = 1; % dimensions of input
@@ -60,8 +63,14 @@ x = sdpvar(nx,N+1);
 u = sdpvar(nu,N);
 objective = 0;
 constraints = [];
+load eq;
+C=[1 0];
+A0 = A(rho1(r,w_marg), rho2(r), kappa,Ts,j_BS,zeta,tau_E);
+B0 = B(rho3(r,w_dep), kappa,Ts,eta_CD,w_dep);
+K=inv([A0-eye(2) B0; C 0])*[Const; r(1)];
+
 for i = 1:N
-    objective = objective + (x(:,i)-r)'*Q*(x(:,i)-r);
+    objective = objective + (x(:,i)-K(1:2))'*Q*(x(:,i)-K(1:2)) + (u(:,i)-K(3))'*R*(u(:,i)-K(3));
     % Use Nonlinear Dynamics
     Amat = A(rho1(x(:,i),w_marg), rho2(x(:,i)), kappa,Ts,j_BS,zeta,tau_E);
     Bmat = B(rho3(x(:,i),w_dep), kappa,Ts,eta_CD,w_dep);
@@ -72,7 +81,7 @@ for i = 1:N
 end
 
 % Apply terminal constraints
-objective = objective + (x(:,N+1)-r)'*Q*(x(:,N+1)-r);
+objective = objective + (x(:,N+1)-K(1:2))'*Q*(x(:,N+1)-K(1:2));
 constraints = [constraints, xmin(2)<=x(2,N+1)<=xmax(2), x(1,N+1)<=xmax(1)];
 % Define optimizer
 options = sdpsettings('verbose',0,'solver','fmincon');
@@ -85,12 +94,12 @@ xk = [x0 zeros(nx,k_sim)];
 uk = zeros(nu,k_sim);
 tk = zeros(1,k_sim);
 for k = 1:k_sim
-    
+    k
     % Every sampling time (starting at 1), adjust controller input
     tic
     [Uk,~,~,~,~] = MPC_Nonlinear(xk(:,k));
     uk(:,k) = Uk(1:nu);
-    disp(uk(k))
+    %disp(uk(k));
     tk(k) = toc;
 
     % Use discrete nonlinear model
