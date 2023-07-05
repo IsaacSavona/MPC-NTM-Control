@@ -30,9 +30,9 @@ Anoise = 2e-3;
 %% Quasi-LPV MPC Model %%
 
 %%% Model
-N = 15;    % prediction horizon
+N = 10;    % prediction horizon
 Ts = 1e-3; % sampling time
-%Ts = 1e-4;
+%Ts = 1e-9;
 nx = 2;    % dimensions of state vector
 nu = 1;    % dimensions of input vector
 x0 = [0.10;1000*2*pi]; % initial state (low width and high frequency does not need control)
@@ -61,11 +61,12 @@ umax = max_power; % maximum on input vector
 % U_set = Polyhedron([-eye(nu);eye(nu)],[-umin;umax]);
 
 %%% Cost Function
-Q = [1 0; 0 0]; % weights on width and freq deviation from reference
+Q = [1 0; 0 1e-9]; % weights on width and freq deviation from reference
 %Q = [13 0; 0 1e-9]; % weights on width and freq deviation from reference
 %r = [0.32; 1000*2*pi]; % reference state
 %r = [0.00050; 200*2*pi]; % reference state just below 0.00125
-r = [0.0005; 200*2*pi];
+%r = [0.001; 200*2*pi];
+r = [0.060; 200*2*pi];
 
 %%% Compact Formulation
 Rho1 = repmat(rho1(x0(:),w_marg),1,N); % compact notation of initial Rho by using current rho(k) at every predicted step
@@ -85,7 +86,7 @@ F = 2*Gamma'*Omega*(Phi*x0+Lambda-R'); % linear part of cost function (F^T U)
 %% Quasi-LPV MPC Simulation %%
 
 %%% initialize variables
-k_sim = 1000; % number of simulation time steps
+k_sim = 700; % number of simulation time steps
 i_sim = 20; % max allowed number of iterations to reach numerical convergence
 xk = [x0 zeros(nx,k_sim)]; % states [w(k),ω(k)] at every time step k=0 ... k=k_sim (size=(nx) x (k_sim+1))
 uk = zeros(nu,k_sim);      % input vectors [P_ECCD(k)] at every time step k=1 ... k=k_sim (size=(nu) x (k_sim))
@@ -104,10 +105,10 @@ for k = 1:k_sim              % simulation loop over time samples
             %%% Run Quadprog
             %[U,~,exitflag] = quadprog(G,F,L,c+W*xk(:,k),[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
             %[U,~,exitflag] = quadprog(G,F,[],[],[],[],[],[],[],opt); % optimize inputs U for prediction horizon given system and constraints
-            [U,~,exitflag,output,lambda] = quadprog(G,F, ...
+            [U,FVAL,exitflag,output,lambda] = quadprog(G,F, ...
                                zeros(3,N),[-xk(1,k);xk(2,k);xk(1,k)]+[0.15;-100*2*pi;0], ... % A*U<b
                                [],[], ... % Aeq*U=beq
-                               zeros(N,1),ones(N,1)*2, ... % lb<U<ub
+                               zeros(N,1),ones(N,1)*4, ... % lb<U<ub
                                [],opt); % initial guess
 %             [U,~,exitflag,output,lambda] = quadprog(G,F, ...
 %                                [],[], ... % zeros(1,N),xk(2,k)+100*2*pi, ... % A*U<b
