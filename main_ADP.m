@@ -8,7 +8,7 @@ global nx nu nd
 global lbx ubx dx0 lbu ubu u0
 
 par.tf = 0.1;
-par.T = 5;
+par.T = 20;
 [sys,F_integrator] = NTM(par.tf);
 
 nx = numel(sys.x);
@@ -42,20 +42,28 @@ sys.discrete = 0;
 
 sys.P = eye(nx); % terminal cost
 %sys.X_N = [0;0];    % terminal state
-r = [0.002*1e2; 1000*2*pi*1e-3]; % reference state
+%r = [0.002*1e2; 1000*2*pi*1e-3]; % reference state
+k_sim = par.T/par.tf;
+r = ones(nx,k_sim).*[1e2;1e-3];
+r(:,1:round(k_sim*(1/5))) = r(:,1:round(k_sim*(1/5))).*[0.04; 5000*2*pi];
+r(:,round(k_sim*(1/5))+1:round(k_sim*(1/5+1/6))) = r(:,round(k_sim*(1/5))+1:round(k_sim*(1/5+1/6))).*[0.005; 5000*2*pi];
+r(:,round(k_sim*(1/5+1/6))+1:round(k_sim*(1/5+1/6+1/4))) = r(:,round(k_sim*(1/5+1/6))+1:round(k_sim*(1/5+1/6+1/4))).*[0.03; 5000*2*pi];
+r(:,round(k_sim*(1/5+1/6+1/4))+1:round(k_sim*(1/5+1/6+1/2))) = r(:,round(k_sim*(1/5+1/6+1/4))+1:round(k_sim*(1/5+1/6+1/2))).*[0.02; 5000*2*pi];
+r(:,round(k_sim*(1/5+1/6+1/2))+1:k_sim) = r(:,round(k_sim*(1/5+1/6+1/2))+1:k_sim).*[0.10; 5000*2*pi];
+
 %sys.X_N = r;    % terminal state
 ADP = BuildADP_N(sys);
 
 %%
 
 %x =[pi;0]; % simulation initial condition
-x = r;%[0.04*1e2;5000*2*pi*1e-3]; % simulation initial condition
+x = [0.04*1e2;5000*2*pi*1e-3]; % simulation initial condition
 sim.V = 0;
 Primal = ADP.x0;
 for i = 1:par.T/par.tf
 
     tic;
-    sol = ADP.solver('x0',Primal,'p',vertcat(x,r),...
+    sol = ADP.solver('x0',Primal,'p',vertcat(x,r(:,1)),...
         'lbx',ADP.lbx,'ubx',ADP.ubx,'lbg',ADP.lbg,'ubg',ADP.ubg);
     sim.sol_t(i) = toc;
     
@@ -73,12 +81,12 @@ for i = 1:par.T/par.tf
     x =  full(Fk.xf);
 end
 %%
-figure(12)
+figure(9)
 subplot(2,2,1)
 hold all
-plot((1:1:par.T/par.tf)*par.tf,sim.x(:,1)*1e2-r(1))
+plot((1:1:par.T/par.tf)*par.tf,sim.x(:,1)*1e2)
 xlabel('$t$ [s]','Interpreter','latex')
-ylabel('$|\mathrm{w}-4|$ [cm]','Interpreter','latex')
+ylabel('$\mathrm{w}$ [cm]','Interpreter','latex')
 
 subplot(2,2,3)
 hold all
@@ -91,5 +99,6 @@ semilogy(sim.sol_t*1e3)
 hold all
 xlabel('sample $k$ [\#]','Interpreter','latex')
 ylabel('computation time $\tau$ [ms]','Interpreter','latex')
+
 
 
