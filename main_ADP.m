@@ -63,7 +63,7 @@ Primal = ADP.x0;
 for i = 1:par.T/par.tf
 
     tic;
-    sol = ADP.solver('x0',Primal,'p',vertcat(x,r(:,1)),...
+    sol = ADP.solver('x0',Primal,'p',vertcat(x,r(:,i)),...
         'lbx',ADP.lbx,'ubx',ADP.ubx,'lbg',ADP.lbg,'ubg',ADP.ubg);
     sim.sol_t(i) = toc;
     
@@ -81,7 +81,7 @@ for i = 1:par.T/par.tf
     x =  full(Fk.xf);
 end
 %%
-figure(9)
+figure(10)
 subplot(2,2,1)
 hold all
 plot((1:1:par.T/par.tf)*par.tf,sim.x(:,1)*1e2)
