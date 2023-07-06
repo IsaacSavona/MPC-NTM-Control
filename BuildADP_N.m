@@ -33,7 +33,7 @@ r = MX.sym('r',nx);
 %%
 
 Xk = x_init;
-Q = [200 0; 0 1];
+Q = [100 0; 0 0];
 for k = 0:sys.N-1
     
     Uk  = MX.sym(['U_' num2str(k)],nu);

@@ -8,6 +8,7 @@ global nx nu nd
 global lbx ubx dx0 lbu ubu u0
 
 par.tf = 0.1;
+par.T = 5;
 [sys,F_integrator] = NTM(par.tf);
 
 nx = numel(sys.x);
@@ -29,7 +30,6 @@ max_freq = 5000*2*pi; % [rad/s]
 lbx = [min_width*1e2,min_freq*1e-3]';
 ubx = [max_width*1e2,max_freq*1e-3]';
 %dx0 = [0;0];
-x0 = [0.04;5000*2*pi]; % initial state (low width and high frequency does not need control)
 
 %%
 
@@ -42,17 +42,17 @@ sys.discrete = 0;
 
 sys.P = eye(nx); % terminal cost
 %sys.X_N = [0;0];    % terminal state
-r = [0.10*1e2; 1000*2*pi*1e-3]; % reference state
+r = [0.002*1e2; 1000*2*pi*1e-3]; % reference state
 %sys.X_N = r;    % terminal state
 ADP = BuildADP_N(sys);
 
 %%
 
 %x =[pi;0]; % simulation initial condition
-x = [0.04*1e2;5000*2*pi*1e-3]; % simulation initial condition
+x = r;%[0.04*1e2;5000*2*pi*1e-3]; % simulation initial condition
 sim.V = 0;
 Primal = ADP.x0;
-for i = 1:120/par.tf
+for i = 1:par.T/par.tf
 
     tic;
     sol = ADP.solver('x0',Primal,'p',vertcat(x,r),...
@@ -76,12 +76,20 @@ end
 figure(12)
 subplot(2,2,1)
 hold all
-plot((1:1:120/par.tf)*par.tf,sim.x(:,1))
+plot((1:1:par.T/par.tf)*par.tf,sim.x(:,1)*1e2-r(1))
+xlabel('$t$ [s]','Interpreter','latex')
+ylabel('$|\mathrm{w}-4|$ [cm]','Interpreter','latex')
+
 subplot(2,2,3)
 hold all
-stairs((1:1:120/par.tf)*par.tf,sim.u)
+stairs((1:1:par.T/par.tf)*par.tf,sim.u/1e6)
+xlabel('$t$ [s]','Interpreter','latex')
+ylabel('$P_{ECCD}$ [MW]','Interpreter','latex')
+
 subplot(2,2,[2,4])
+semilogy(sim.sol_t*1e3)
 hold all
-plot(sim.sol_t)
+xlabel('sample $k$ [\#]','Interpreter','latex')
+ylabel('computation time $\tau$ [ms]','Interpreter','latex')
 
 

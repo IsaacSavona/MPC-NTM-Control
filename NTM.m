@@ -23,11 +23,6 @@ omega0 = 2*pi*420; % [rad/s] equilibrium frequency
 kappa = 16*mu0*Lq*rs^2/(0.82*tau_r*B_pol*pi);
 zeta = m*Cw*tau_A0^2*tau_w*a^3;
 
-Const = [-4/3*(kappa*Ts*j_BS*w_sat)/(w_sat^2+w_marg^2); omega0*Ts/tau_E0];
-
-m = 1;
-l = 2;
-
 x = MX.sym('x',2);
 u = MX.sym('u',1);
 %d = MX.sym('d',1);
